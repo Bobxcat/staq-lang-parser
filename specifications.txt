@@ -3,7 +3,7 @@ Preface:
 Code files for this language should end in ".stq"
 
 By default, a call to this program reads from "in.stq" in the root directory
-By providing a filename in the format: "sta"
+By providing a filename in the format: "staq-lang-parser [filename]", a custom file path can be specified for reading
 
 The input code is a text file, which is interpereted by running through each character and executing their correlating command
 
