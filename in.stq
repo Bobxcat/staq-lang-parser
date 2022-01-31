@@ -1,0 +1,31 @@
+//Tribonacci value initiation
+push:1 push:1 move:C:B move:C:B
+
+//For loop declaration
+push:500 move:C:A
+label:start
+
+//Code body start
+//vvv
+
+//Concept: store the tribonacci values on stack B, most recent on top and oldest on bottom
+//Note that the code expects the for loop iterator to always end on the top of stack A
+
+//The starting stack arrangment is as follows: A[for-iterator] B[oldest tnum, second-oldest tnum, newest tnum]
+
+//Arrange the stacks to create the following stack values, where the left is the bottom:
+//A[for-iterator, second-oldest tnum, oldest tnum] B[second-oldest tnum, newest tnum, newest tnum] 
+move:B:C copy:B:A move:B:C move:B:A move:C:B move:C:B copy:B:B
+
+//Then, add stacks A and B. The result will be put into stack C. Move the result to the top of stack B
++ move:C:B + move:C:B
+
+//Print the newest tribonacci value and a newline
+copy:B:C printnum push:10 print
+
+//^^^
+//Code body end
+
+//For loop end
+push:1 move:C:B - move:C:A
+copy:A:C jump:start

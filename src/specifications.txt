@@ -1,0 +1,61 @@
+Preface:
+
+Code files for this language should end in ".stq"
+
+By default, a call to this program reads from "in.stq" in the root directory
+By providing a filename in the format: "sta"
+
+The input code is a text file, which is interpereted by running through each character and executing their correlating command
+
+There are three stacks, represented in these docs as stacks A, B, and C
+
+The values stored in the stacks are 64 bits wide, stored and operated on as 64-bit signed integers
+
+The C stack is the primary interface for inputs and outputs, as an example the print and push commands only use stack C
+
+[N] -> an integer
+[S] -> a reference to either the A, B, or C stack
+[string] -> a string value
+
+Commands:
+Any unrecognized command will be ignored
+All commands remove stack values which are read in the command unless explicitly stated otherwise
+
+Space is the delimiter for commands
+
+Newline removes all values from stack C
+
+exit -> exits the program
+// -> causes the parser to skip the rest of the line. The C stack is still cleared before the next line. Note that this is interpreted as its own command and must have a space between it and the previous command to function properly
+
+print -> print each value of stack C as a character starting from the top
+printnum -> print each of stack C in numeric form, as a signed integer. Does not add spaces between values
+debug -> prints the values of each stack in numeric form to the console without removing any stack values
+
+push:[N] -> add the value N to the top of stack C
+
+pop:[S] -> remove the top value from stack S
+
+move:[S0]:[S1] -> takes the top value of stack S0 and pushes it to stack S1
+copy:[S0]:[S1] -> copies the top value of stack S0 without removing it and pushes that value to stack S1
+
+jump:[string] -> If the top value of stack C is greater than 0, the code execution jumps to the first occurence of the label [string]. If the label [string] does not appear in the code
+label:[string] -> Defines a label for jumping and such
+
++ -> adds the top values of the A and B stacks and pushes the result to stack C
+- -> subtracts the top values of the A and B stacks and pushes the result to stack C
+* -> multiplies the top values of the A and B stacks and pushes the result to stack C
+/ -> divides the top values of the A and B stacks and pushes the result to stack C
+% -> takes the remainder of division between the top values of stacks A and B, pushing the result to stack C
+
+== -> reads the top values of the A and B stacks and pushes a 1 to stack C if they are equal, otherwise pushing a 0
+> -> reads the top values of the A and B stacks and pushes a 1 to stack C if the value from A > the value from B, otherwise pushing a 0
+>= -> reads the top values of the A and B stacks and pushes a 1 to stack C if the value from A >= the value from B, otherwise pushing a 0
+< -> reads the top values of the A and B stacks and pushes a 1 to stack C if the value from A < the value from B, otherwise pushing a 0
+<= -> reads the top values of the A and B stacks and pushes a 1 to stack C if the value from A <= the value from B, otherwise pushing a 0
+
+& -> pushes the bitwise and of the top values of the A and B stacks to stack C
+| -> pushes the bitwise or of the top values of the A and B stacks to stack C
+^ -> pushes the bitwise xor of the top values of the A and B stacks to stack C
+>> -> pushes the top value of the A stack right-shifted by the top value of the B stack to stack C
+<< -> pushes the top value of the A stack left-shifted by the top value of the B stack to stack C

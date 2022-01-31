@@ -1,0 +1,11 @@
+push:10 move:C:A
+
+label:start
+
+push:33 push:100 push:108 push:114 push:111 push:87 push:32 push:111 push:108 push:108 push:101 push:72 print //Print "Hello World!"
+push:15 move:C:A push:1 move:C:B << move:C:A push:3 move:C:B + print //Complicated way to print another '!'
+push:10 print //Print a newline
+
+//For loop ending statement. The iterator value is stored on the top of stack A
+push:1 move:C:B - move:C:A
+copy:A:C jump:start
