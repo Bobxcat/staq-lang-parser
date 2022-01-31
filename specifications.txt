@@ -9,7 +9,7 @@ The input code is a text file, which is interpereted by running through each cha
 
 There are three stacks, represented in these docs as stacks A, B, and C
 
-The values stored in the stacks are 64 bits wide, stored and operated on as BigInts
+The values stored in the stacks are 64 bits wide, stored and operated on as big signed integers from the crate "num"
 
 The C stack is the primary interface for inputs and outputs, as an example the print and push commands only use stack C
 
