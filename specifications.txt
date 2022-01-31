@@ -30,7 +30,6 @@ exit -> exits the program
 
 print -> print each value of stack C as a character starting from the top
 printnum -> print each of stack C in numeric form, as a signed integer. Does not add spaces between values
-debug -> prints the values of each stack in numeric form to the console without removing any stack values
 
 push:[N] -> add the value N to the top of stack C
 
