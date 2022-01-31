@@ -26,7 +26,7 @@ Space is the delimiter for commands
 Newline removes all values from stack C
 
 exit -> exits the program
-// -> causes the parser to skip the rest of the line. The C stack is still cleared before the next line. Note that this is interpreted as its own command and must have a space between it and the previous command to function properly
+// -> causes the parser to skip the rest of the line. The C stack is still cleared before the next line. Note that this is interpreted as its own command and must have a space between it and the previous command to function properly. However, the command does not require a space between it and any following characters
 
 print -> print each value of stack C as a character starting from the top
 printnum -> print each of stack C in numeric form, as a signed integer. Does not add spaces between values
