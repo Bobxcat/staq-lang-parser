@@ -1,7 +1,7 @@
-use std::{fs, time::SystemTime, str::FromStr};
+use std::{fs::{self, File}, time::SystemTime, str::FromStr, io::{Write, Read}};
 
 extern crate num;
-use num::{bigint::BigInt, ToPrimitive};
+use num::{bigint::BigInt, ToPrimitive, FromPrimitive};
 
 use crate::token::TokenType;
 
@@ -84,10 +84,16 @@ fn parse(file_dir: String, tokens: &mut Vec<TokenType>)
         "exit" => tokens.push(TokenType::Exit {}),
         "" => (),
 
-        "push" => tokens.push(TokenType::Push { arg: BigInt::from_str(parts[1]).expect(format!("Failed parsing Push token argument: {}", command).as_str()) }),
-        "pop" => tokens.push(TokenType::Pop { arg: stack_char_to_index(parts[1]) }),
         "print" => tokens.push(TokenType::Print {}),
         "printnum" => tokens.push(TokenType::PrintNum {}),
+        "createfile" => tokens.push(TokenType::CreateFile { arg: if parts.len() > 1 { parts[1].to_string() } else { "".to_string() } }),
+        "createfilestream" => tokens.push(TokenType::CreateFileStream { arg: if parts.len() > 1 { parts[1].to_string() } else { "".to_string() } }),
+        "openfilestream" => tokens.push(TokenType::OpenFileStream { arg: if parts.len() > 1 { parts[1].to_string() } else { "".to_string() } }),
+        "readfilestream" => tokens.push(TokenType::ReadFileStream {}),
+        "writefilestream" => tokens.push(TokenType::WriteFileStream {}),
+
+        "push" => tokens.push(TokenType::Push { arg: BigInt::from_str(parts[1]).expect(format!("Failed parsing Push token argument: {}", command).as_str()) }),
+        "pop" => tokens.push(TokenType::Pop { arg: stack_char_to_index(parts[1]) }),
 
         "+" => tokens.push(TokenType::Add {}),
         "-" => tokens.push(TokenType::Subtract {}),
@@ -184,12 +190,13 @@ fn main()
   //There are three stacks, initialized seperately since they don't implement Copy()
   let mut stacks: [Stack; 3] = [Stack { dat: Vec::new() }, Stack { dat: Vec::new() }, Stack { dat: Vec::new() }];
 
-  //An 128 bit integer may seem like overkill, but if the program is extraordinarily large it'd be necessary
   let mut token_index: usize = 0;
-  //let mut tokens: Vec<Box<dyn token::Token>> = Vec::new();
   let mut tokens: Vec<TokenType> = Vec::new();
 
   parse(file_path, &mut tokens);
+
+  //Init runtime IO streams and such
+  let mut file_stream: File = File::create("staqdump").expect("Cannot create 'staqdump' temporary file");
 
   //Execution start
   println!("Program execution start\n----");
@@ -210,15 +217,12 @@ fn main()
     {
       TokenType::Exit => { program_exit_reason = format!("exit command called from index {}", token_index); break; },
 
-      TokenType::Clear => stacks[2].clear(),
-      TokenType::Push { arg } => stacks[2].push(arg.to_owned()),
-      TokenType::Pop { arg } => { stacks[(*arg) as usize].pop(); },
       TokenType::Print => {
         let stack_len: usize = stacks[2].len();
         let mut s: String = "".to_string();
         for _ in 0..stack_len
         {
-          let c: char = stacks[2].pop().to_u8().expect(format!("Invalid char value in print index {}", token_index).as_str()) as char;
+          let c: char = stacks[2].pop().to_u8().expect(format!("Invalid char value in print. Index: {}", token_index).as_str()) as char;
           s.push(c);
         }
         print!("{}", s);
@@ -232,6 +236,67 @@ fn main()
         }
         print!("{}", s);
       },
+      TokenType::CreateFile { arg } => {
+        let mut path: String;
+        if arg.is_empty()
+        {
+          path = "".to_string();
+          for _ in 0..stacks[2].len()
+          {
+            let c: char = stacks[2].pop().to_u8().expect(format!("Invalid char value in print index {}", token_index).as_str()) as char;
+            path.push(c);
+          }
+        } else
+        {
+          path = arg.to_string();
+        }
+        File::create(path).expect(format!("File creation failed. Index {}", token_index).as_str());
+      },
+      TokenType::CreateFileStream { arg } => {
+        let mut path: String;
+        if arg.is_empty()
+        {
+          path = "".to_string();
+          for _ in 0..stacks[2].len()
+          {
+            let c: char = stacks[2].pop().to_u8().expect(format!("Invalid char value in print index {}", token_index).as_str()) as char;
+            path.push(c);
+          }
+        } else
+        {
+          path = arg.to_string();
+        }
+        file_stream = File::create(path).expect(format!("File creation failed. Index {}", token_index).as_str());
+      },
+      TokenType::OpenFileStream { arg } => {
+        let mut path: String;
+        if arg.is_empty()
+        {
+          path = "".to_string();
+          for _ in 0..stacks[2].len()
+          {
+            let c: char = stacks[2].pop().to_u8().expect(format!("Invalid char value in print index {}", token_index).as_str()) as char;
+            path.push(c);
+          }
+        } else
+        {
+          path = arg.to_string();
+        }
+        let res: Result<File, std::io::Error> = File::open(path);
+        if res.is_ok()
+        {
+          file_stream = res.unwrap();
+        } else
+        {
+          stacks[2].push(BigInt::from_i32(-1).expect("Invalid conversion from -1 to BigInt"));  
+        }
+      },
+      TokenType::ReadFileStream => { let mut arr: [u8; 1] = [0]; file_stream.read(&mut arr); stacks[2].push(BigInt::from_u8(arr[0]).expect("Failed to convert from u8 to BigInt")); },
+      TokenType::WriteFileStream => { let mut arr: Vec<u8> = Vec::with_capacity(stacks[2].len()); for _ in 0..stacks[2].len() { arr.push(stacks[2].pop().to_u8().expect(format!("Failure in writefilestream input fro stack C.Index: {}", token_index).as_str())); } file_stream.write(&arr); },
+
+      TokenType::Clear => stacks[2].clear(),
+      TokenType::Push { arg } => stacks[2].push(arg.to_owned()),
+      TokenType::Pop { arg } => { stacks[(*arg) as usize].pop(); },
 
       TokenType::Add => { let a: BigInt = stacks[0].pop(); let b: BigInt = stacks[1].pop(); stacks[2].push(a + b) },
       TokenType::Subtract => { let a: BigInt = stacks[0].pop(); let b: BigInt = stacks[1].pop(); stacks[2].push(a - b) },
@@ -264,6 +329,8 @@ fn main()
   }
 
   let program_time: std::time::Duration = SystemTime::now().duration_since(program_start_time).expect("Time went backwards!");
+
+  std::fs::remove_file("staqdump").expect("Failed to delete 'staqdump' temporary file");
 
   println!("----\nProgram execution finished: {}\nTime taken: {}ms or {}μs", program_exit_reason, program_time.as_millis(), program_time.as_micros());
 }

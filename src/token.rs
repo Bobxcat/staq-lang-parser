@@ -9,6 +9,13 @@ pub enum TokenType
 
   Print,
   PrintNum,
+
+  CreateFile { arg: String },
+  CreateFileStream { arg: String },
+  OpenFileStream { arg: String },
+  ReadFileStream,
+  WriteFileStream,
+
   Clear,
   Push { arg: BigInt },
   Pop { arg: u8 },

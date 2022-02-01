@@ -31,6 +31,15 @@ exit -> exits the program
 print -> print each value of stack C as a character starting from the top
 printnum -> print each of stack C in numeric form, as a signed integer. Does not add spaces between values
 
+createfile:[string] -> Creates a file with the given path
+createfile -> Creates a file with the path given by reading each value of stack C as a character
+createfilestream:[string] -> Creates a file with the given path and opens it as the active file stream
+createfilestream -> Creates a file with the path given by reading each value of stack C as a character and opens it as the active file stream
+openfilestream:[string] -> Opens a file with the given path. Pushes a value to the C stack -- one if it successfully opened the file, negative one otherwise
+openfilestream -> Opens a file with the path given by reading all values of the C stack as characters in a string. Then pushes a value to the C stack -- one if it successfully opened the file, negative one otherwise
+readfilestream -> Reads the next byte from the open file stream and pushes it to the C stack
+writefilestream -> Writes all values of the C stack to the open file stream as bytes
+
 push:[N] -> add the value N to the top of stack C
 
 pop:[S] -> remove the top value from stack S
