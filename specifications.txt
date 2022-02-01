@@ -21,8 +21,6 @@ Commands:
 Any unrecognized command will be ignored
 All commands remove stack values which are read in the command unless explicitly stated otherwise
 
-Any Input call to an IO stream (such as commandline input) will return an array of bytes on the C stack and then push the length of the byte array onto the C stack
-
 Space is the delimiter for commands
 
 Newline removes all values from stack C
