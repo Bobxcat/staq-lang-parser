@@ -13,3 +13,20 @@ push:10 writefilestream //Write a newline
 //For loop ending statement. The iterator value is stored on the top of stack A
 push:1 move:C:B - move:C:A
 copy:A:C jump:start
+//After for loop, pop the iterator
+pop:A
+
+openfilestream:./hello_world.txt
+
+//Second for loop begin
+
+push:10 move:C:A
+
+label:reprintstart
+
+//Now, read some of it back
+readfilestream print
+
+//For loop ending statement. The iterator value is (again) stored on the top of stack A
+push:1 move:C:B - move:C:A
+copy:A:C jump:reprintstart

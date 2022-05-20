@@ -161,9 +161,9 @@ fn parse(file_dir: String, tokens: &mut Vec<TokenType>)
 
   let tokens_len: usize = tokens.len();
 
-  for t in tokens
+  for i in 0..tokens_len
   {
-    println!("{}", t);
+    println!("{}. {}",i , tokens[i]);
   }
   println!("\n");
 
@@ -291,7 +291,21 @@ fn main()
           stacks[2].push(BigInt::from_i32(-1).expect("Invalid conversion from -1 to BigInt"));  
         }
       },
-      TokenType::ReadFileStream => { let mut arr: [u8; 1] = [0]; file_stream.read(&mut arr); stacks[2].push(BigInt::from_u8(arr[0]).expect("Failed to convert from u8 to BigInt")); },
+      TokenType::ReadFileStream => {
+        let mut arr: [u8; 1] = [1];
+        let res: Result<usize, std::io::Error> = file_stream.read(&mut arr);
+        match res {
+            Ok(bytes_read) =>
+            {
+              let push_value:BigInt =
+              if bytes_read == 0 { BigInt::from_i32(-1).expect("Failed to convert -1 to BigInt") }
+              else { BigInt::from_u8(arr[0]).expect("Failed to convert from u8 to BigInt") };
+
+              stacks[2].push(push_value);
+            },
+            Err(_) => { stacks[2].push(BigInt::from_i32(-1).expect("Failed to convert -1 to BigInt")); },
+        }
+      },
       TokenType::WriteFileStream => { let mut arr: Vec<u8> = Vec::with_capacity(stacks[2].len()); for _ in 0..stacks[2].len() { arr.push(stacks[2].pop().to_u8().expect(format!("Failure in writefilestream input fro stack C.Index: {}", token_index).as_str())); } file_stream.write(&arr); },
 
       TokenType::Clear => stacks[2].clear(),
