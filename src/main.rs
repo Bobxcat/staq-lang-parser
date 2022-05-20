@@ -41,6 +41,7 @@ impl Stack
   }
 }
 
+//Takes a character representing one of the stacks and turns it into that stack's index
 fn stack_char_to_index(s: &str) -> u8
 {
   match s
@@ -52,12 +53,29 @@ fn stack_char_to_index(s: &str) -> u8
   }
 }
 
-fn parse(file_dir: String, tokens: &mut Vec<TokenType>)
+pub fn run_from_file_stream(file_stream: File) {
+
+}
+
+pub fn run_from_file_path(file_path: String) {
+  let mut tokens: Vec<TokenType> = Vec::new();
+
+  //Init runtime IO streams and such
+  let mut file_stream: File = File::open(file_path).expect("Cannot open file from file_path");
+
+  parse(&mut file_stream, &mut tokens);
+
+  file_stream = File::create("staqdump").expect("Cannot create 'staqdump' temporary file");
+
+  interpret(tokens, file_stream);
+}
+
+fn parse(file_stream: &mut File, tokens: &mut Vec<TokenType>)
 {
   let start_time: SystemTime = SystemTime::now();
 
-  println!("{}", file_dir);
-  let file: String = fs::read_to_string(file_dir).expect("Unable to read file");
+  let mut file: String = "".to_string();//fs::read_to_string(file).expect("Unable to read file");
+  file_stream.read_to_string(&mut file).unwrap();
 
   let lines: Vec<&str> = file.lines().collect();
 
@@ -125,7 +143,7 @@ fn parse(file_dir: String, tokens: &mut Vec<TokenType>)
 
     tokens.push(TokenType::Clear);
   }
-  //Finish by completing the 
+  //Finish by setting the index of jump tokens
   for i in 0..tokens.len()
   {
     match &tokens[i]
@@ -172,31 +190,12 @@ fn parse(file_dir: String, tokens: &mut Vec<TokenType>)
   println!("Number of commands: {}\n", tokens_len);
 }
 
-fn main()
-{
-  let args: Vec<String> = std::env::args().collect();
-  let mut file_path: String = "./in.stq".to_string();
-  
-  for i in 0..args.len()
-  {
-    println!("{}", args[i]);
-  }
-
-  if args.len() > 1
-  {
-    file_path = "./".to_string() + &args[1].to_owned();
-  }
+fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
+  //Initialization
 
   //There are three stacks, initialized seperately since they don't implement Copy()
   let mut stacks: [Stack; 3] = [Stack { dat: Vec::new() }, Stack { dat: Vec::new() }, Stack { dat: Vec::new() }];
-
   let mut token_index: usize = 0;
-  let mut tokens: Vec<TokenType> = Vec::new();
-
-  parse(file_path, &mut tokens);
-
-  //Init runtime IO streams and such
-  let mut file_stream: File = File::create("staqdump").expect("Cannot create 'staqdump' temporary file");
 
   //Execution start
   println!("Program execution start\n----");
@@ -333,5 +332,23 @@ fn main()
   std::fs::remove_file("staqdump").expect("Failed to delete 'staqdump' temporary file");
 
   println!("----\nProgram execution finished: {}\nTime taken: {}ms or {}μs", program_exit_reason, program_time.as_millis(), program_time.as_micros());
+}
+
+fn main()
+{
+  let args: Vec<String> = std::env::args().collect();
+  let mut file_path: String = "./in.stq".to_string();
+  
+  for i in 0..args.len()
+  {
+    println!("{}", args[i]);
+  }
+
+  if args.len() > 1
+  {
+    file_path = "./".to_string() + &args[1].to_owned();
+  }
+
+  run_from_file_path(file_path);
 }
 
