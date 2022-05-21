@@ -2,7 +2,7 @@
 push:1 push:1 move:C:B move:C:B
 
 //For loop declaration
-push:5000000 move:C:A
+push:500000 move:C:A
 label:start
 
 //Code body start

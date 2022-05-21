@@ -30,6 +30,7 @@ exit -> exits the program
 
 print -> print each value of stack C as a character starting from the top
 printnum -> print each of stack C in numeric form, as a signed integer. Does not add spaces between values
+getnextin -> gets the next character inputed to the program through the console and pushes it to stack C
 
 createfile:[string] -> Creates a file with the given path
 createfile -> Creates a file with the path given by reading each value of stack C as a character

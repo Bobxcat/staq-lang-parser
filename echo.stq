@@ -1,0 +1,7 @@
+getnextin move:C:A
+getnextin move:C:A
+getnextin move:C:A
+getnextin move:C:A
+getnextin move:C:A
+
+move:A:C move:A:C move:A:C move:A:C move:A:C print
