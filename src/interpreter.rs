@@ -1,4 +1,5 @@
 use std::{
+    env,
     fs::{self, File},
     io::{Read, Write},
     str::FromStr,
@@ -8,7 +9,10 @@ use std::{
 extern crate num;
 use num::{bigint::BigInt, FromPrimitive, ToPrimitive};
 
-use crate::token::TokenType;
+use crate::{
+    token::TokenType,
+    vfs::{FileStream, FileSystem, RealLocalFileSystem},
+};
 
 pub struct Stack {
     dat: Vec<BigInt>,
@@ -54,25 +58,22 @@ pub fn run_from_string(string: String) {
 
     parse(string, &mut tokens);
 
-    let file_stream = File::create("staqdump").expect("Cannot create 'staqdump' temporary file");
+    //Init runtime IO system
+    let mut file_system: Box<dyn FileSystem> = Box::new(RealLocalFileSystem {
+        root: env::current_dir().unwrap().to_string_lossy().to_string(),
+    });
 
-    interpret(tokens, file_stream);
+    interpret(tokens, file_system);
 }
 
 pub fn run_from_file_path(file_path: String) {
-    let mut tokens: Vec<TokenType> = Vec::new();
+    let mut s = String::new();
+    File::open(file_path)
+        .expect("Cannot open file from file_path")
+        .read_to_string(&mut s)
+        .unwrap();
 
-    //Init runtime IO streams and such
-    let mut file_stream: File = File::open(file_path).expect("Cannot open file from file_path");
-
-    let mut f = "".to_string();
-    file_stream.read_to_string(&mut f);
-
-    parse(f, &mut tokens);
-
-    file_stream = File::create("staqdump").expect("Cannot create 'staqdump' temporary file");
-
-    interpret(tokens, file_stream);
+    run_from_string(s);
 }
 
 fn parse(file: String, tokens: &mut Vec<TokenType>) {
@@ -174,7 +175,48 @@ fn parse(file: String, tokens: &mut Vec<TokenType>) {
 
         tokens.push(TokenType::Clear);
     }
-    //Finish by setting the index of jump tokens
+
+    optimize(tokens);
+
+    //Debug print out all tokens
+    println!();
+
+    let tokens_len: usize = tokens.len();
+
+    for i in 0..tokens_len {
+        println!("{}. {}", i, tokens[i]);
+    }
+    println!("\n");
+
+    let total_time = SystemTime::now()
+        .duration_since(start_time)
+        .expect("Calculating time duration of parsing step failed");
+    println!(
+        "Compile time taken: {}ms or {}μs",
+        total_time.as_millis(),
+        total_time.as_micros()
+    );
+    println!("Number of commands: {}\n", tokens_len);
+}
+
+///Optimizes a token stream for computational speed (not memory).
+/// Primarily, this removed unneeded tokens from the stream
+fn optimize(tokens: &mut Vec<TokenType>) {
+    //Remove any redundant 'Clear' tokens
+    for i in (0..tokens.len()).rev() {
+        match tokens[i] {
+            TokenType::Clear => {
+                //If there's a Clear token before this one, remove this one
+                if let Some(TokenType::Clear) = tokens.get(i - 1) {
+                    tokens.remove(i);
+                }
+            }
+            _ => (),
+        }
+    }
+
+    //Finally, set the index of all jump tokens (this is optimization, but must be done)
+    //Also, this MUST happen after any tokens are added or removed
     for i in 0..tokens.len() {
         match &tokens[i] {
             TokenType::PreComputeJump { arg } => {
@@ -205,30 +247,17 @@ fn parse(file: String, tokens: &mut Vec<TokenType>) {
             _ => (),
         }
     }
-
-    //Debug print out all tokens
-    println!();
-
-    let tokens_len: usize = tokens.len();
-
-    for i in 0..tokens_len {
-        println!("{}. {}", i, tokens[i]);
-    }
-    println!("\n");
-
-    let total_time = SystemTime::now()
-        .duration_since(start_time)
-        .expect("Calculating time duration of parsing step failed");
-    println!(
-        "Compile time taken: {}ms or {}μs",
-        total_time.as_millis(),
-        total_time.as_micros()
-    );
-    println!("Number of commands: {}\n", tokens_len);
 }
 
-fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
+fn interpret(tokens: Vec<TokenType>, mut file_system: Box<dyn FileSystem>) {
     //Initialization
+
+    let mut file_stream_write: Box<dyn FileStream> = file_system
+        .create_file_stream("staqdump")
+        .expect("Could not create staqdump (write)");
+    let mut file_stream_read: Box<dyn FileStream> = file_system
+        .open_file_stream("staqdump")
+        .expect("Could not open staqdump (read)");
 
     //There are three stacks, initialized seperately since they don't implement Copy()
     let mut stacks: [Stack; 3] = [
@@ -296,8 +325,17 @@ fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
                 } else {
                     path = arg.to_string();
                 }
-                File::create(path)
-                    .expect(format!("File creation failed. Index {}", token_index).as_str());
+
+                //Discard the file stream since the only importance is whether or not the file was successfully created
+                if let Ok(_) = file_system.create_file_stream(&path) {
+                    //Signal success
+                    stacks[2]
+                        .push(BigInt::from_i32(1).expect("Invalid conversion from 1 to BigInt"));
+                } else {
+                    //Signal failure
+                    stacks[2]
+                        .push(BigInt::from_i32(-1).expect("Invalid conversion from -1 to BigInt"));
+                }
             }
             TokenType::CreateFileStream { arg } => {
                 let mut path: String;
@@ -312,8 +350,18 @@ fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
                 } else {
                     path = arg.to_string();
                 }
-                file_stream = File::create(path)
-                    .expect(format!("File creation failed. Index {}", token_index).as_str());
+
+                //If the file doesn't open properly, push -1 to the c stack. Otherwise, push 1
+                if let Ok(f) = file_system.create_file_stream(&path) {
+                    file_stream_write = f;
+                    //Signal success
+                    stacks[2]
+                        .push(BigInt::from_i32(1).expect("Invalid conversion from 1 to BigInt"));
+                } else {
+                    //Signal failure
+                    stacks[2]
+                        .push(BigInt::from_i32(-1).expect("Invalid conversion from -1 to BigInt"));
+                }
             }
             TokenType::OpenFileStream { arg } => {
                 let mut path: String;
@@ -328,18 +376,22 @@ fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
                 } else {
                     path = arg.to_string();
                 }
-                let res: Result<File, std::io::Error> = File::open(path);
-                if res.is_ok() {
-                    file_stream = res.unwrap();
+
+                //If the file doesn't open properly, push -1 to the c stack. Otherwise, push 1
+                if let Ok(f) = file_system.open_file_stream(&path) {
+                    file_stream_read = f;
+                    //Signal success
+                    stacks[2]
+                        .push(BigInt::from_i32(1).expect("Invalid conversion from 1 to BigInt"));
                 } else {
+                    //Signal failure
                     stacks[2]
                         .push(BigInt::from_i32(-1).expect("Invalid conversion from -1 to BigInt"));
                 }
             }
             TokenType::ReadFileStream => {
                 let mut arr: [u8; 1] = [1];
-                let res: Result<usize, std::io::Error> = file_stream.read(&mut arr);
-                match res {
+                match file_stream_read.read(&mut arr) {
                     Ok(bytes_read) => {
                         let push_value: BigInt = if bytes_read == 0 {
                             BigInt::from_i32(-1).expect("Failed to convert -1 to BigInt")
@@ -348,8 +400,14 @@ fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
                         };
 
                         stacks[2].push(push_value);
+
+                        //Signal success
+                        stacks[2].push(
+                            BigInt::from_i32(1).expect("Invalid conversion from 1 to BigInt"),
+                        );
                     }
                     Err(_) => {
+                        //Signal failure
                         stacks[2]
                             .push(BigInt::from_i32(-1).expect("Failed to convert -1 to BigInt"));
                     }
@@ -368,7 +426,19 @@ fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
                         ),
                     );
                 }
-                file_stream.write(&arr);
+                match file_stream_write.write(&arr) {
+                    Ok(_) => {
+                        //Signal success
+                        stacks[2].push(
+                            BigInt::from_i32(1).expect("Invalid conversion from 1 to BigInt"),
+                        );
+                    }
+                    Err(_) => {
+                        //Signal failure
+                        stacks[2]
+                            .push(BigInt::from_i32(-1).expect("Failed to convert -1 to BigInt"));
+                    }
+                }
             }
 
             TokenType::Clear => stacks[2].clear(),
@@ -483,7 +553,9 @@ fn interpret(tokens: Vec<TokenType>, mut file_stream: File) {
         .duration_since(program_start_time)
         .expect("Time went backwards!");
 
-    std::fs::remove_file("staqdump").expect("Failed to delete 'staqdump' temporary file");
+    file_system
+        .remove_file("staqdump")
+        .expect("Failed to remove 'staqdump' temporary file");
 
     println!(
         "\n----\nProgram execution finished: {}\nTime taken: {}ms or {}μs",

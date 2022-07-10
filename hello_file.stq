@@ -20,12 +20,14 @@ openfilestream:./hello_world.txt
 
 //Second for loop begin
 
-push:10 move:C:A
+push:100 move:C:A
 
 label:reprintstart
 
 //Now, read some of it back
-readfilestream print
+//Since IO commands in StaqLang push a value to the C stack (1 for success/-1 for failure) after doing everything, the top value of the C stack needs to be discarded
+//This moves the success indicator value away from the C stack, prints the value underneath, then moves the indicator back so it will be discarded once the C stack is cleared
+readfilestream move:C:B print move:B:C
 
 //For loop ending statement. The iterator value is (again) stored on the top of stack A
 push:1 move:C:B - move:C:A
