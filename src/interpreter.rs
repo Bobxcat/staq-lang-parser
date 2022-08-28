@@ -2,6 +2,7 @@ use std::{
     env,
     fs::{self, File},
     io::{Read, Write},
+    path::PathBuf,
     str::FromStr,
     time::SystemTime,
 };
@@ -53,27 +54,36 @@ fn stack_char_to_index(s: &str) -> u8 {
     }
 }
 
-pub fn run_from_string(string: String) {
+pub fn run_from_string(string: String, mut file_system: Box<dyn FileSystem>) {
     let mut tokens: Vec<TokenType> = Vec::new();
 
     parse(string, &mut tokens);
-
-    //Init runtime IO system
-    let mut file_system: Box<dyn FileSystem> = Box::new(RealLocalFileSystem {
-        root: env::current_dir().unwrap().to_string_lossy().to_string(),
-    });
 
     interpret(tokens, file_system);
 }
 
 pub fn run_from_file_path(file_path: String) {
     let mut s = String::new();
-    File::open(file_path)
+
+    File::open(file_path.clone())
         .expect("Cannot open file from file_path")
         .read_to_string(&mut s)
         .unwrap();
 
-    run_from_string(s);
+    //Init runtime IO system
+    //Make the file system local to the StaqLang program's path
+    //This means the root is the program's parent directory
+    let root = PathBuf::from_str(&file_path)
+        .unwrap()
+        .parent()
+        .unwrap()
+        .to_str()
+        .unwrap()
+        .to_string()
+        + "/";
+    let file_system: Box<dyn FileSystem> = Box::new(RealLocalFileSystem { root });
+
+    run_from_string(s, file_system);
 }
 
 fn parse(file: String, tokens: &mut Vec<TokenType>) {
@@ -200,7 +210,7 @@ fn parse(file: String, tokens: &mut Vec<TokenType>) {
 }
 
 ///Optimizes a token stream for computational speed (not memory).
-/// Primarily, this removed unneeded tokens from the stream
+/// Primarily, this removes unneeded tokens from the stream
 fn optimize(tokens: &mut Vec<TokenType>) {
     //Remove any redundant 'Clear' tokens
     for i in (0..tokens.len()).rev() {
@@ -238,7 +248,7 @@ fn optimize(tokens: &mut Vec<TokenType>) {
                 //Steps to replacing PreComputeJump with Jump:
                 //1. Remove the PreComputeJump object and swap it with the top value of the vector
                 //2. Add the new Jump object to the top of the vector
-                //3. Swap the new Jump object with the old value at the top of the vector
+                //3. Swap the new Jump object with the old value at the top of the vecto
                 let tokens_last_index: usize = tokens.len() - 1;
                 tokens.swap_remove(i);
                 tokens.push(TokenType::Jump { arg: index });

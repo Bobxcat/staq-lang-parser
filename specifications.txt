@@ -29,7 +29,7 @@ exit -> exits the program
 // -> causes the parser to skip the rest of the line. The C stack is still cleared before the next line. Note that this is interpreted as its own command and must have a space between it and the previous command to function properly. However, the command does not require a space between it and any following characters
 
 print -> print each value of stack C as a character starting from the top
-printnum -> print each of stack C in numeric form, as a signed integer. Does not add spaces between values
+printnum -> print each value of stack C in numeric form, as a signed integer. Does not add spaces between values
 getnextin -> gets the next character inputed to the program through the console and pushes it to stack C
 
         Note: all file I/O operations will push a value of -1 to the C stack in case of failure and a value of 1 to the C stack in case of success
@@ -51,7 +51,7 @@ pop:[S] -> remove the top value from stack S
 move:[S0]:[S1] -> takes the top value of stack S0 and pushes it to stack S1
 copy:[S0]:[S1] -> copies the top value of stack S0 without removing it and pushes that value to stack S1
 
-jump:[string] -> If the top value of stack C is greater than 0, the code execution jumps to the first occurence of the label [string]. If the label [string] does not appear in the code
+jump:[string] -> If the top value of stack C is greater than 0, the code execution jumps to the first occurence of the label [string]. If the label [string] does not appear in the code, this does nothing
 label:[string] -> Defines a label for jumping and such
 
 + -> adds the top values of the A and B stacks and pushes the result to stack C

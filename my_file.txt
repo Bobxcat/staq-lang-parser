@@ -1,4 +1,0 @@
-This is my file. Isn't that crazy?
-
-!!!Breaking News!!!
-	This is still my file.

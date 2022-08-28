@@ -1,0 +1,14 @@
+//Counts from 0 to infinity, printing each number to the console
+//Uses the B stack to hold the counter
+push:0 move:C:B
+
+//Loop head
+label:LOOP_START
+
+//Print then increment
+copy:B:C printnum //Print the number
+push:10 print //Print a newline
+push:1 move:C:A + move:C:B //Increment the number
+
+//Loop tail
+push:1 jump:LOOP_START

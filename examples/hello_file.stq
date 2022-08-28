@@ -1,5 +1,5 @@
 //Open file stream
-createfilestream:./hello_world.txt
+createfilestream:/hello_world.txt
 
 //For statement start
 push:10 move:C:A
@@ -16,7 +16,7 @@ copy:A:C jump:start
 //After for loop, pop the iterator
 pop:A
 
-openfilestream:./hello_world.txt
+openfilestream:/hello_world.txt
 
 //Second for loop begin
 
