@@ -6,7 +6,7 @@ push:10 move:C:A
 
 label:start
 
-push:32 push:46 copy:A:A push:48 move:C:B +  writefilestream //Write "[iterator]. " to file -- note the needed conversion from int to ASCII character
+push:32 push:46 copy:A:A push:48 move:C:B + writefilestream //Write "[iterator]. " to file -- note the needed conversion from int to ASCII character
 push:33 push:100 push:108 push:114 push:111 push:87 push:32 push:111 push:108 push:108 push:101 push:72 writefilestream //Write "Hello World!" to file
 push:10 writefilestream //Write a newline
 

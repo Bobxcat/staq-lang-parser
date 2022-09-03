@@ -1,10 +1,21 @@
 extern crate num;
 
 pub mod interpreter;
+pub mod optimize;
 mod token;
 pub mod vfs;
 
 use interpreter::*;
+use vfs::FileStream;
+
+fn assert_file_contents_equal<F>(mut file: F, contents: &str)
+where
+    F: FileStream,
+{
+    let mut s = String::new();
+    file.read_to_string(&mut s).unwrap();
+    assert_eq!(s, contents);
+}
 
 #[cfg(test)]
 mod tests {
@@ -14,15 +25,6 @@ mod tests {
     };
 
     #[test]
-    fn from_file() {
-        let args: Vec<String> = std::env::args().collect();
-        run_from_file_path(args.last().expect("No args given").clone());
-    }
-    #[test]
-    fn hello_world() {
-        run_from_file_path("hello_world.stq".to_string());
-    }
-    #[test]
     fn vfs() {
         //RealLocalFileSystem
         {
@@ -31,7 +33,7 @@ mod tests {
                 root: std::env::current_dir()
                     .unwrap()
                     .as_path()
-                    .to_string_lossy() //"C:/Random and Personal Things/Programs/Rust/StaqLang/staq-lang-parser/"
+                    .to_string_lossy()
                     .to_string()
                     + "/",
             };

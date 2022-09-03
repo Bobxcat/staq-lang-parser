@@ -11,6 +11,7 @@ extern crate num;
 use num::{bigint::BigInt, FromPrimitive, ToPrimitive};
 
 use crate::{
+    optimize::optimize,
     token::TokenType,
     vfs::{FileStream, FileSystem, RealLocalFileSystem},
 };
@@ -207,56 +208,6 @@ fn parse(file: String, tokens: &mut Vec<TokenType>) {
         total_time.as_micros()
     );
     println!("Number of commands: {}\n", tokens_len);
-}
-
-///Optimizes a token stream for computational speed (not memory).
-/// Primarily, this removes unneeded tokens from the stream
-fn optimize(tokens: &mut Vec<TokenType>) {
-    //Remove any redundant 'Clear' tokens
-    for i in (0..tokens.len()).rev() {
-        match tokens[i] {
-            TokenType::Clear => {
-                //If there's a Clear token before this one, remove this one
-                if let Some(TokenType::Clear) = tokens.get(i - 1) {
-                    tokens.remove(i);
-                }
-            }
-            _ => (),
-        }
-    }
-
-    //Finally, set the index of all jump tokens (this is optimization, but must be done)
-    //Also, this MUST happen after any tokens are added or removed
-    for i in 0..tokens.len() {
-        match &tokens[i] {
-            TokenType::PreComputeJump { arg } => {
-                let label: &String = arg;
-                let mut index: usize = usize::MAX;
-
-                for ib in 0..tokens.len() {
-                    match &tokens[ib] {
-                        TokenType::Label { arg } => {
-                            if arg == label {
-                                index = ib;
-                                break;
-                            };
-                        }
-                        _ => (),
-                    }
-                }
-
-                //Steps to replacing PreComputeJump with Jump:
-                //1. Remove the PreComputeJump object and swap it with the top value of the vector
-                //2. Add the new Jump object to the top of the vector
-                //3. Swap the new Jump object with the old value at the top of the vecto
-                let tokens_last_index: usize = tokens.len() - 1;
-                tokens.swap_remove(i);
-                tokens.push(TokenType::Jump { arg: index });
-                tokens.swap(i, tokens_last_index);
-            }
-            _ => (),
-        }
-    }
 }
 
 fn interpret(tokens: Vec<TokenType>, mut file_system: Box<dyn FileSystem>) {
